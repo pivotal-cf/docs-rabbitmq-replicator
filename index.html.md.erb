@@ -9,50 +9,36 @@ RabbitMQ for PCF Replicator is a tool that allows you to install multiple Rabbit
 
 For example, you may want to isolate the cluster serving Spring Cloud Services (SCS) from the cluster serving apps in the marketplace. Or you may want to give a certain team their own dedicated, preprovisioned cluster that you manage for them. For information on how to accomplish these scenarios, see [Common Use Cases](#usecases). 
 
-## <a id='features'></a>Key Features
+## <a id="usecases"></a> Common Use Cases
 
-RabbitMQ for PCF Replicator has the following key features:
+### Using the RabbitMQ Replicator to Create Isolation
 
-* Feature one.
-* Feature two.
-* Feature three.
+The image below illustrates how to isolate SCS on RabbitMQ for PCF from clusters dedicated to different teams. In the use case below, the unreplicated RabbitMQ instance is used as a backing service for SCS, while two replica instances are each dedicated to a specific team. 
+![alt text](/images/flowchart.png)
 
-## <a id="snapshot"></a>Product Snapshot
+These scenarios are explained in detail below.
 
-The following table provides version and version-support information about PRODUCT-NAME.
+### <a id="scs-isolation"></a> Running SCS on a Dedicated RabbitMQ Cluster
 
-<table class="nice">
-    <th>Element</th>
-    <th>Details</th>
-    <tr>
-        <td>Version</td>
-        <td>v1.0</td>
-    </tr>
-    <tr>
-        <td>Release date</td>
-        <td>August 21, 2017</td>
-    </tr>
-    <tr>
-        <td>Compatible RabbitMQ versions</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>Compatible Ops Manager versions</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>Compatible Elastic Runtime versions</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>IaaS support</td>
-        <td>AWS?, Azure?, GCP?, OpenStack?, and vSphere?</td>
-    </tr>
-    <tr>
-        <td>IPsec support?</td>
-        <td>[Yes or No]</td>
-    </tr>
-</table>
+Replica RabbitMQ tiles cannot be used to provide a backing service for Spring Cloud Services (SCS) because SCS expects that the service is called `p-rabbitmq`. Therefore, if you want to isolate the RabbitMQ cluster that is used by SCS from other tenants, you can reserve the unreplicated RabbitMQ for PCF tile for SCS, as shown in the diagram below. You can then add replica RabbitMQ clusters for use by apps in the marketplace.
+
+Pivotal recommends that you use the unreplicated RabbitMQ for PCF tile solely for SCS to avoid contention between apps using SCS, and apps using RabbitMQ for PCF in the marketplace.  
+
+To reserve the unreplicated tile for SCS, turn off the **Broker Registrar** errand to prevent the broker from being exposed in the marketplace. For more information, see [Errands](http://docs.pivotal.io/rabbitmq-cf/install-config.html#errands). 
+
+To offer RabbitMQ as a cloud messaging service in the marketplace, create one or several replicas, install them in Ops Manager, and either allow the broker registrar errand to run, or [register the service manually using CF](https://docs.pivotal.io/pivotalcf/services/managing-service-brokers.html#register-broker).  
+
+### <a id="dedicated"></a> Providing a Preprovisioned Dedicated Cluster
+
+To reserve a RabbitMQ cluster for use by a specific team, all you need to do is [disable the broker registrar errand in Ops Manager](http://docs.pivotal.io/rabbitmq-cf/install-config.html#errands). This prevents service registration in the marketplace. Once you deploy the tile, manually expose the service broker to your desired orgs and spaces. For instructions, see [Register a Broker](https://docs.pivotal.io/pivotalcf/services/managing-service-brokers.html#register-broker). 
+
+### <a id="on-demand"></a> Using Replicas While Offering the On-Demand RabbitMQ Service
+
+The On-Demand service is not offered in replica tiles, since the purpose of the replicator is to create additional pre-provisioned clusters. If you wish to offer on-demand service plans, use the unreplicated RabbitMQ for PCF tile as shown in the diagram above. 
+
+### <a id="blue-green"></a> Blue-Green Upgrades (Advanced)
+
+In order to do blue-green style updates to minimize downtime, you can stand up a new cluster, and migrate data and users over to the new cluster over a period of time. Speak with your Platform Architect about how to enable this workflow.
 
 
 ## <a id="generate"></a> Generating Replica Tiles
@@ -97,34 +83,6 @@ The following are the parameters expected in the above syntax:
 
 Once you have generated a replica tile, you can upload it to Ops Manager as you would any other tile. After you have uploaded it, follow the instructions for [Installing and Configuring RabbitMQ for PCF as a Pre-Provisioned Service](https://docs.pivotal.io/rabbitmq-cf/install-config-pp.html). Note that the On-Demand service is not offered on replica tiles.
 
-## <a id="usecases"></a> Common Use Cases
-
-### <a id="scs-isolation"></a> Running SCS on a Dedicated RabbitMQ Cluster
-
-Replica RabbitMQ tiles cannot be used to provide a backing service for Spring Cloud Services (SCS) because SCS expects that the service is called `p-rabbitmq`. Therefore, if you want to isolate the RabbitMQ cluster that is used by SCS from other tenants, you can reserve the unreplicated RabbitMQ for PCF tile for SCS, as shown in the diagram below. You can then add replica RabbitMQ clusters for use by apps in the marketplace.
-
-Pivotal recommends that you use the unreplicated RabbitMQ for PCF tile solely for SCS to avoid contention between apps using SCS, and apps using RabbitMQ for PCF in the marketplace.  
-
-To reserve the unreplicated tile for SCS, turn off the **Broker Registrar** errand to prevent the broker from being exposed in the marketplace. For more information, see [Errands](http://docs.pivotal.io/rabbitmq-cf/install-config.html#errands). 
-
-To offer RabbitMQ as a cloud messaging service in the marketplace, create one or several replicas, install them in Ops Manager, and either allow the broker registrar errand to run, or [register the service manually using CF](https://docs.pivotal.io/pivotalcf/services/managing-service-brokers.html#register-broker).  
-
-#### Example of Using the RabbitMQ Replicator to Create Isolation
-
-The image below illustrates how to isolate SCS on RabbitMQ for PCF from clusters dedicated to different teams. In the use case below, the unreplicated RabbitMQ instance is used as a backing service for SCS, while two replica instances are each dedicated to a specific team.
-![alt text](/images/flowchart.png)
-
-### <a id="dedicated"></a> Providing a Preprovisioned Dedicated Cluster
-
-To reserve a RabbitMQ cluster for use by a specific team, all you need to do is [disable the broker registrar errand in Ops Manager](http://docs.pivotal.io/rabbitmq-cf/install-config.html#errands). This prevents service registration in the marketplace. Once you deploy the tile, manually expose the service broker to your desired orgs and spaces. For instructions, see [Register a Broker](https://docs.pivotal.io/pivotalcf/services/managing-service-brokers.html#register-broker). 
-
-### <a id="on-demand"></a> Using Replicas While Offering the On-Demand RabbitMQ Service
-
-The On-Demand service is not offered in replica tiles, since the purpose of the replicator is to create additional pre-provisioned clusters. If you wish to offer on-demand service plans, use the unreplicated RabbitMQ for PCF tile as shown in the diagram above. 
-
-### <a id="blue-green"></a> Blue-Green Upgrades (Advanced)
-
-In order to do blue-green style updates to minimize downtime, you can stand up a new cluster, and migrate data and users over to the new cluster over a period of time. Speak with your Platform Architect about how to enable this workflow.
 
 ## <a id="upgrading"></a> Upgrading Replica Tiles
 
@@ -156,8 +114,6 @@ If you'd like to do a blue-green style upgrade, see [Blue-Green Upgrades](#blue-
 ## <a id="limitations"></a> Limitations
 
 * The On-Demand service is not offered on replica tiles.
-
-## <a id="release"></a> Release Notes
 
 ## <a id="feedback"></a>Feedback
 
